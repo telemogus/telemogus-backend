@@ -39,11 +39,9 @@ func CreateChat(c *gin.Context) {
 func GetUserChats(c *gin.Context) {
 	userId := uint(c.MustGet("userId").(float64))
 	var chatIDs []uint
-	// Query the join table to get chat IDs for the user
 	db.DB.Table("user_chats").Where("user_id = ?", userId).Pluck("chat_id", &chatIDs)
 
 	var chats []models.Chat
-	// Query Chat table to get Chat records for the found IDs, including Messages and Members
 	db.DB.Where("id IN ?", chatIDs).Preload("Messages").Preload("Members").Find(&chats)
 
 	c.JSON(http.StatusOK, chats)
