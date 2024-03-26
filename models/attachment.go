@@ -1,11 +1,7 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
-
 type Attachment struct {
-	gorm.Model
+	Base
 	MessageID uint `gorm:"foreignKey:MessageID"`
 	FileType  string
 	FilePath  string

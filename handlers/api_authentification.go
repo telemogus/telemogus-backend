@@ -46,7 +46,7 @@ func Login(c *gin.Context) {
 	var user models.User
 	db.DB.Where("username = ?", credentials.Username).First(&user)
 
-	if user.ID == 0 || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password)) != nil {
+	if user.Id == 0 || bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(credentials.Password)) != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "Incorrect username or password"})
 		return
 	}
@@ -54,7 +54,7 @@ func Login(c *gin.Context) {
 	expirationTime := time.Now().Add(30 * time.Minute)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": user.Username,
-		"userId":   user.ID,
+		"userId":   user.Id,
 		"exp":      expirationTime.Unix(),
 	})
 

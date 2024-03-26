@@ -13,7 +13,7 @@ var JWTKey []byte = []byte(`secret_key`)
 func AuthRequired(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
 
-	if strings.Contains(tokenString, "Bearer") {
+	if strings.Contains(tokenString, " ") {
 		tokenString = strings.Split(tokenString, " ")[1]
 	}
 

@@ -2,15 +2,13 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
-	Username     string `json:"username" binding:"required" gorm:"uniqueIndex;not null"`
-	PasswordHash string `json:"password" binding:"required" gorm:"not null"`
-	CreatedAt    time.Time
-	LastSeen     time.Time
-	Chats        []Chat `gorm:"many2many:user_chats;"`
+	Base
+	Username     string    `json:"username" binding:"required" gorm:"uniqueIndex;not null"`
+	PasswordHash string    `json:"-" binding:"required" gorm:"not null"`
+	CreatedAt    time.Time `json:"createdAt"`
+	LastSeen     time.Time `json:"lastSeen"`
+	Chats        []Chat    `json:"chats,omitempty" gorm:"many2many:user_chats;"`
 }

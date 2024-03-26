@@ -2,12 +2,10 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Message struct {
-	gorm.Model
+	Base
 	ChatID    uint
 	UserID    uint
 	Content   string    `json:"content" binding:"required"`
