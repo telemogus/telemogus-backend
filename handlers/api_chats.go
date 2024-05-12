@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/dgb35/telemogus_backend/db"
@@ -37,6 +38,20 @@ func CreateChat(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Chat created"})
 }
 
+func GetChat(c *gin.Context) {
+	chatId, strerr := strconv.ParseUint(c.Param("chatId"), 10, 32)
+
+	if strerr != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": strerr.Error()})
+		return
+	}
+
+	chat := models.Chat{}
+	db.DB.Model(models.Chat{}).Where("id = ?", chatId).Find(&chat)
+
+	c.JSON(http.StatusOK, chat)
+}
+
 func GetUserChats(c *gin.Context) {
 	type ChatPreview struct {
 		Id                  uint      `json:"id"`
@@ -63,7 +78,7 @@ func GetUserChats(c *gin.Context) {
 		userChatPreviews[i].ChatName = chats[i].ChatName
 
 		var lastMessage models.Message
-		db.DB.Model(&models.Message{}).Where("chat_id = ?", currentChatId).Order("created_at desc").Find(&lastMessage)
+		db.DB.Model(&models.Message{}).Where("chat_id = ?", currentChatId).Order("updated_at desc").Find(&lastMessage)
 
 		userChatPreviews[i].LastMessageTime = lastMessage.CreatedAt
 		userChatPreviews[i].LastMessageContent = lastMessage.Content
@@ -75,4 +90,25 @@ func GetUserChats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, userChatPreviews)
+}
+
+func AddChatMember(c *gin.Context) {
+	var input struct {
+		MemberId uint `json:"memberId"`
+	}
+
+	chatId, strerr := strconv.ParseUint(c.Param("chatId"), 10, 32)
+
+	if err := c.ShouldBindJSON(&input); err != nil || strerr != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userChat := struct {
+		ChatId   uint64 `json:"chatId"`
+		MemberId uint   `json:"memberId"`
+	}{chatId, input.MemberId}
+
+	db.DB.Table("user_chats").Create(&userChat)
+	c.JSON(http.StatusOK, userChat)
 }

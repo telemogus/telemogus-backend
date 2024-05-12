@@ -18,8 +18,14 @@ func main() {
 
 	authorized := r.Group("/", utils.AuthRequired)
 	{
-		authorized.POST("/chat", handlers.CreateChat)
+		authorized.POST("/chats", handlers.CreateChat)
 		authorized.GET("/chats", handlers.GetUserChats)
+		authorized.GET("/chats/:chatId", handlers.GetChat)
+
+		authorized.POST("/chats/:chatId/members", handlers.AddChatMember)
+
+		authorized.GET("/chats/:chatId/messages", handlers.GetChatMessages)
+		authorized.POST("/chats/:chatId/messages", handlers.CreateChatMessage)
 	}
 
 	r.Run() // Listen and serve on 0.0.0.0:8080

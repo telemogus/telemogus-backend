@@ -26,6 +26,14 @@ func SignUp(c *gin.Context) {
 
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), 14)
 
+	var exists bool
+	db.DB.Model(&models.User{}).Select("count(*) > 0").Where("Username = ?", input.Username).Find(&exists)
+
+	if exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
+		return
+	}
+
 	user := models.User{Username: input.Username, PasswordHash: string(hashedPassword)}
 	db.DB.Create(&user)
 
