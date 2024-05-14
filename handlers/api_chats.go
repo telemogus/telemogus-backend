@@ -56,7 +56,7 @@ func GetUserChats(c *gin.Context) {
 	type ChatPreview struct {
 		Id                  uint      `json:"id"`
 		ChatName            string    `json:"chatName"`
-		LastMessageContent  string    `json:"lastMessageContent"`
+		LastMessageContent  string    `json:"lastMessage"`
 		LastMessageTime     time.Time `json:"lastMessageTime"`
 		UnreadMessagesCount uint      `json:"unreadMessagesCount"`
 	}
@@ -94,7 +94,7 @@ func GetUserChats(c *gin.Context) {
 
 func AddChatMember(c *gin.Context) {
 	var input struct {
-		MemberId uint `json:"memberId"`
+		Username string `json:"username"`
 	}
 
 	chatId, strerr := strconv.ParseUint(c.Param("chatId"), 10, 32)
@@ -104,10 +104,13 @@ func AddChatMember(c *gin.Context) {
 		return
 	}
 
+	var user models.User
+	db.DB.Where("username = ?", input.Username).Find(&user)
+
 	userChat := struct {
-		ChatId   uint64 `json:"chatId"`
-		MemberId uint   `json:"memberId"`
-	}{chatId, input.MemberId}
+		ChatId uint64 `json:"chatId"`
+		UserId uint   `json:"userId"`
+	}{chatId, user.Id}
 
 	db.DB.Table("user_chats").Create(&userChat)
 	c.JSON(http.StatusOK, userChat)
