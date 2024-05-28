@@ -18,6 +18,7 @@ func main() {
 
 	authorized := r.Group("/", utils.AuthRequired)
 	{
+		authorized.GET("/ws", handlers.WebsocketHandler)
 		authorized.POST("/chats", handlers.CreateChat)
 		authorized.GET("/chats", handlers.GetUserChats)
 		authorized.GET("/chats/:chatId", handlers.GetChat)

@@ -72,5 +72,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	user.LastSeen = time.Now()
+	db.DB.Save(&user)
+
 	c.JSON(http.StatusOK, gin.H{"token": tokenString})
 }

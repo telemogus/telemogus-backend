@@ -47,7 +47,11 @@ func GetChat(c *gin.Context) {
 	}
 
 	chat := models.Chat{}
-	db.DB.Model(models.Chat{}).Where("id = ?", chatId).Find(&chat)
+
+	if err := db.DB.Model(models.Chat{}).Where("id = ?", chatId).Preload("Members").Find(&chat); err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
 
 	c.JSON(http.StatusOK, chat)
 }
@@ -63,10 +67,16 @@ func GetUserChats(c *gin.Context) {
 
 	userId := uint(c.MustGet("userId").(float64))
 	var chatIDs []uint
-	db.DB.Table("user_chats").Where("user_id = ?", userId).Pluck("chat_id", &chatIDs)
+	if err := db.DB.Table("user_chats").Where("user_id = ?", userId).Pluck("chat_id", &chatIDs); err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
 
 	var chats []models.Chat
-	db.DB.Where("id IN ?", chatIDs).Preload("Members").Find(&chats)
+	if err := db.DB.Where("id IN ?", chatIDs).Preload("Members").Find(&chats); err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
 
 	chatsNumber := len(chats)
 	userChatPreviews := make([]ChatPreview, chatsNumber)
@@ -78,13 +88,19 @@ func GetUserChats(c *gin.Context) {
 		userChatPreviews[i].ChatName = chats[i].ChatName
 
 		var lastMessage models.Message
-		db.DB.Model(&models.Message{}).Where("chat_id = ?", currentChatId).Order("updated_at desc").Find(&lastMessage)
+		if err := db.DB.Model(&models.Message{}).Where("chat_id = ?", currentChatId).Order("updated_at desc").Find(&lastMessage); err.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+			return
+		}
 
 		userChatPreviews[i].LastMessageTime = lastMessage.CreatedAt
 		userChatPreviews[i].LastMessageContent = lastMessage.Content
 
 		var unreadMessagesCount uint
-		db.DB.Model(&models.Message{}).Select("count(*) as count").Where("state", models.Received).Scan(&unreadMessagesCount)
+		if err := db.DB.Model(&models.Message{}).Select("count(*) as count").Where("state", models.Received).Scan(&unreadMessagesCount); err.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+			return
+		}
 
 		userChatPreviews[i].UnreadMessagesCount = unreadMessagesCount
 	}
@@ -105,13 +121,20 @@ func AddChatMember(c *gin.Context) {
 	}
 
 	var user models.User
-	db.DB.Where("username = ?", input.Username).Find(&user)
+	if err := db.DB.Where("username = ?", input.Username).Find(&user); err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
 
 	userChat := struct {
 		ChatId uint64 `json:"chatId"`
 		UserId uint   `json:"userId"`
 	}{chatId, user.Id}
 
-	db.DB.Table("user_chats").Create(&userChat)
+	if err := db.DB.Table("user_chats").Create(&userChat); err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
+
 	c.JSON(http.StatusOK, userChat)
 }
