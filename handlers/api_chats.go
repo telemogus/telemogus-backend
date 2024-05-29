@@ -11,10 +11,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CreateChat godoc
+// @Summary Create a new chat
+// @Description Create a new chat, either a group or individual chat
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Param input body string true "Chat creation details"
+// @Success 200 {object} string
+// @Failure 400 {object} string
+// @Router /chat [post]
 func CreateChat(c *gin.Context) {
 	var input struct {
 		ChatName string `json:"chatName"`
-		IsGroup  bool   `json:"isGroup"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -32,12 +41,22 @@ func CreateChat(c *gin.Context) {
 
 	db.DB.Where("id = ?", userId).Find(&currentUser)
 
-	chat := models.Chat{ChatName: input.ChatName, IsGroup: input.IsGroup, Members: []models.User{currentUser}}
+	chat := models.Chat{ChatName: input.ChatName, Members: []models.User{currentUser}}
 	db.DB.Create(&chat)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Chat created"})
 }
 
+// GetChat godoc
+// @Summary Get chat details
+// @Description Retrieve details of a specific chat by its ID, including members
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Param chatId path int true "Chat ID"
+// @Success 200 {object} models.Chat
+// @Failure 400 {object} string
+// @Router /chat/{chatId} [get]
 func GetChat(c *gin.Context) {
 	chatId, strerr := strconv.ParseUint(c.Param("chatId"), 10, 32)
 
@@ -56,14 +75,24 @@ func GetChat(c *gin.Context) {
 	c.JSON(http.StatusOK, chat)
 }
 
+type ChatPreview struct {
+	Id                  uint      `json:"id"`
+	ChatName            string    `json:"chatName"`
+	LastMessageContent  string    `json:"lastMessage"`
+	LastMessageTime     time.Time `json:"lastMessageTime"`
+	UnreadMessagesCount uint      `json:"unreadMessagesCount"`
+}
+
+// GetUserChats godoc
+// @Summary Get user chats
+// @Description Retrieve a list of chat previews for the authenticated user
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Success 200 {array} ChatPreview
+// @Failure 400 {object} string
+// @Router /user/chats [get]
 func GetUserChats(c *gin.Context) {
-	type ChatPreview struct {
-		Id                  uint      `json:"id"`
-		ChatName            string    `json:"chatName"`
-		LastMessageContent  string    `json:"lastMessage"`
-		LastMessageTime     time.Time `json:"lastMessageTime"`
-		UnreadMessagesCount uint      `json:"unreadMessagesCount"`
-	}
 
 	userId := uint(c.MustGet("userId").(float64))
 	var chatIDs []uint
@@ -108,6 +137,17 @@ func GetUserChats(c *gin.Context) {
 	c.JSON(http.StatusOK, userChatPreviews)
 }
 
+// AddChatMember godoc
+// @Summary Add a member to a chat
+// @Description Add a user to a specific chat by chat ID and username
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Param chatId path int true "Chat ID"
+// @Param input body string true "User information"
+// @Success 200 {object} string
+// @Failure 400 {object} string
+// @Router /chat/{chatId}/add_member [post]
 func AddChatMember(c *gin.Context) {
 	var input struct {
 		Username string `json:"username"`
@@ -136,5 +176,5 @@ func AddChatMember(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, userChat)
+	c.JSON(http.StatusOK, gin.H{"message": "Added chat member"})
 }

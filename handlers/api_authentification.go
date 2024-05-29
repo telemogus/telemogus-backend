@@ -13,38 +13,59 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SignUp(c *gin.Context) {
-	var input struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
-	if err := c.ShouldBindJSON(&input); err != nil {
+// SignUp godoc
+// @Summary Register a new user
+// @Description Create a new user account with a username and password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param input body Credentials true "User registration details"
+// @Success 200 {object} string
+// @Failure 400 {object} string
+// @Router /signup [post]
+func SignUp(c *gin.Context) {
+	var credentials Credentials
+
+	if err := c.ShouldBindJSON(&credentials); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), 14)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(credentials.Password), 14)
 
 	var exists bool
-	db.DB.Model(&models.User{}).Select("count(*) > 0").Where("Username = ?", input.Username).Find(&exists)
+	db.DB.Model(&models.User{}).Select("count(*) > 0").Where("Username = ?", credentials.Username).Find(&exists)
 
 	if exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
 		return
 	}
 
-	user := models.User{Username: input.Username, PasswordHash: string(hashedPassword)}
+	user := models.User{Username: credentials.Username, PasswordHash: string(hashedPassword)}
 	db.DB.Create(&user)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Registration successful"})
 }
 
+// Login godoc
+// @Summary Log in a user
+// @Description Authenticate user with username and password and return a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body Credentials true "User credentials"
+// @Success 200 {object} string
+// @Failure 400 {object} string
+// @Failure 401 {object} string
+// @Failure 500 {object} string
+// @Router /login [post]
 func Login(c *gin.Context) {
-	var credentials struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
+	var credentials Credentials
 
 	if err := c.ShouldBindJSON(&credentials); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
